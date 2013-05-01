@@ -270,13 +270,62 @@ prop_Accum is = morallyDubiousIOProperty $ do
   where es = map sum $ tail $ map (map fromIntegral) $ inits is
 
 hsMain :: IO ()
-hsMain = do
-  quickCheck prop_Accum
-  return ()
+hsMain = quickCheck prop_Accum
 
 foreign export ccall hsMain :: IO ()
 foreign import ccall reset :: IO ()
 foreign import ccall write_data :: Int8 -> IO Int16
 ```
 
-QuickCheck は
+QuickCheck によって生成された乱数リスト `is` (integers のつもり) に対し、`mapM write_data` することで、乱数をアキュムレータにひとつずつ入力して、それにより変化した出力をリストにして `as` (actuals のつもり) に束縛、これを `es` (expects のつもり) と比較している。
+
+hsMain は、上で定義されてるプロパティ prop_Accum に対して、quickCheck を適用しているだけ。
+
+コンパイル手順は以下のとおり。
+
+CD-ROM をうぃんうぃんゆわせたときと同様、まず、Verilog のコードからコンパイルする。DPI-C で import するだけの場合とは異なり、`vsim -exportobj` として、オブジェクトファイルも生成する必要がある。
+
+    $ vlib work
+    $ vlog -sv -dpiheader dpiheader.h test_accum.v accum.v
+    $ vsim -dpiexportobj exportobj test_accum
+
+次に、Haskell のコード、C のコードをコンパイルする。
+
+C のコードは ghc が生成するヘッダファイルも #include するので、まず、Haskell のコードから先にコンパイルする。そして C のコードも ghc でコンパイルする。ここではまったのは、ghc は Haskell Platform の Windows 用インストーラのため、渡すパスは Windows パスでないといけないこと。cygpath コマンドの -m オプションなどを使うとよい。
+
+    $ ghc -c hsMain.hs
+    $ ghc -c -I"${MODELSIM_HOME}/include" c_main.c
+
+最後に、すべてのオブジェクトファイルをリンクして DLL ファイルを作る。
+
+    $ ghc -shared -L$"${MODELSIM_HOME}/win32aloem" -o main.dll exportobj.obj c_main.o hsMain.o -lmtipli -package QuickCheck
+
+DPI-C のために `-lmtipli` オプション、QuickCheck ライブラリのために `-package QuickCheck` をつける。
+
+DLL が無事できたら、以下のように実行できる。
+
+    $ vsim test_accum -sv_lib main -do 'run -all'
+    Reading C:/altera/12.1sp1/modelsim_ase/tcl/vsim/pref.tcl
+    
+    # 10.1b
+    
+    # vsim -do {run -all} -sv_lib main test_accum
+    # Loading C:\cygwin\tmp\hirai@MACBOOKPRO_dpi_1992\win32pe_gcc-4.2.1\export_tramp.dll
+    # Loading sv_std.std
+    # Loading work.test_accum
+    # Loading work.accum
+    # Compiling C:\cygwin\tmp\hirai@MACBOOKPRO_dpi_1992\win32pe_gcc-4.2.1\exportwrapper.c
+    # Loading C:\cygwin\tmp\hirai@MACBOOKPRO_dpi_1992\win32pe_gcc-4.2.1\dpi_auto_compile.dll
+    # Loading .\main.dll
+    # run -all
+    +++ OK, passed 100 tests.
+    # ** Note: $finish    : test_accum.v(25)
+    #    Time: 286521 ns  Iteration: 0  Instance: /test_accum
+
+100 件のテストが生成されて、パスしてることが分かる。
+
+といっても、これだけでは、なにが動いてるのか分からないので、GUI を起動して波形を出力してみると、こんな感じになる。
+
+![実行波形](accum_waveform.png)
+
+実際には、アキュムレータは飽和するように作ってあるのに対して、QuickCheck のプロパティはそこを考慮していないのだが、デフォルトでは、そこにひっかかるケースまでは生成してくれないようだ。
