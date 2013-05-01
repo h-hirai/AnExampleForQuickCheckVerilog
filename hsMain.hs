@@ -15,9 +15,7 @@ prop_Accum is = morallyDubiousIOProperty $ do
   where es = map sum $ tail $ map (map fromIntegral) $ inits is
 
 hsMain :: IO ()
-hsMain = do
-  quickCheck prop_Accum
-  return ()
+hsMain = quickCheck prop_Accum
 
 foreign export ccall hsMain :: IO ()
 foreign import ccall reset :: IO ()
