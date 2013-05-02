@@ -1,0 +1,9 @@
+*.o
+*.obj
+*.h
+*.hi
+*.dll
+*.dll.a
+transcript
+work
+*.wlf
