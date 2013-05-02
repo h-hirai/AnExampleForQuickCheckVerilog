@@ -30,8 +30,8 @@ http://support.microsoft.com/kb/165721
 
 VisualStudio でコンパイルすれば、そのままコンパイルできるのだろうが、ここはひねくれて Cygwin の gcc を使う。TCHAR は使えないみたいなので、
 
-- tchar.h を #include してる行をコメントアウト、
-- `TCHAR` は `char` に、`_tprintf` は `printf` に置換
+* tchar.h を #include してる行をコメントアウト、
+* `TCHAR` は `char` に、`_tprintf` は `printf` に置換
 
 すればコンパイルできる。特別なオプションは必要ない。
 
@@ -47,8 +47,8 @@ VisualStudio でコンパイルすれば、そのままコンパイルできる�
 
 上記の C コードを少し書き換えて、Haskell の FFI で呼び出してやると、Haskell から eject できる。
 
-- `main` と `Usage` は使わないので削除
-- Haskell の関数名は小文字から始まるので `EjectVolume` を `ejectVolume` に改名 (不要かも)
+* `main` と `Usage` は使わないので削除
+* Haskell の関数名は小文字から始まるので `EjectVolume` を `ejectVolume` に改名 (不要かも)
 
 FFI は初めて試してみたが、びっくりするくらい簡単に利用できる。
 
@@ -119,9 +119,9 @@ CD-ROM ドライブをうぃんうぃんゆわせるには以下のとおり。
 
 コード → https://gist.github.com/h-hirai/5486748
 
-ところで、Haskell の FFI も SystemVerilog の DPI-C も、C を呼び出すだけではなく、C から呼び出すこともできる。
-
 ##Haskell の QuickCheck で Verilog のランダム試験を行う
+
+ところで、Haskell の FFI も SystemVerilog の DPI-C も、C を呼び出すだけではなく、C から呼び出すこともできる。
 
 なら、すごい H の田中さんのこれ → http://tanakh.jp/posts/2012-07-20-haskell-tools.html を Verilog でできるんじゃね?
 
@@ -214,9 +214,9 @@ module test_accum;
 endmodule
 ```
 
-- テストシナリオは、DPI-C で import する `c_main` 関数に丸投げ
-- テストシナリオから、DUT を動かすための task、`reset` と `v_write_data` を DPI-C で export
-- `v_write_data` は、引数に渡されたデータをアキュムレータに入力した後、出力を返す
+* テストシナリオは、DPI-C で import する `c_main` 関数に丸投げ
+* テストシナリオから、DUT を動かすための task、`reset` と `v_write_data` を DPI-C で export
+* `v_write_data` は、引数に渡されたデータをアキュムレータに入力した後、出力を返す
 
 せっかく SystemVerilog なんだから、program ブロックとか clocking とか使ったらいいんじゃないかという気がするけど、そのへん不勉強でよく知らない。
 
@@ -246,9 +246,9 @@ int c_main(void) {
 }
 ```
 
-- `c_main` は、Haskell の FFI で export される hsMain にたらいまわし
-- DPI-C で export される `v_write_data` は、出力データをポインタで経由で受け渡しする形になるので、これを返り値で返すように `write_data` でラップ
-- `reset` はそのままで Haskell から呼ばれる
+* `c_main` は、Haskell の FFI で export される `hsMain` にたらいまわし
+* DPI-C で export される `v_write_data` は、出力データをポインタで経由で受け渡しする形になるので、これを返り値で返すように `write_data` でラップ
+* `reset` はそのままで Haskell から呼ばれる
 
 最後に Haskell のコード:
 
@@ -279,19 +279,19 @@ foreign import ccall write_data :: Int8 -> IO Int16
 
 QuickCheck によって生成された乱数リスト `is` (integers のつもり) に対し、`mapM write_data` することで、乱数をアキュムレータにひとつずつ入力して、それにより変化した出力をリストにして `as` (actuals のつもり) に束縛、これを `es` (expects のつもり) と比較している。
 
-hsMain は、上で定義されてるプロパティ prop_Accum に対して、quickCheck を適用しているだけ。
+`hsMain` は、プロパティ `prop_Accum` に対して、`quickCheck` を適用しているだけ。
 
 コンパイル手順は以下のとおり。
 
-CD-ROM をうぃんうぃんゆわせたときと同様、まず、Verilog のコードからコンパイルする。DPI-C で import するだけの場合とは異なり、`vsim -exportobj` として、オブジェクトファイルも生成する必要がある。
+CD-ROM をうぃんうぃんゆわせたときと同様、まず、Verilog のコードからコンパイルする。DPI-C で import するだけの場合とは異なり、`vsim -dpiexportobj` でオブジェクトファイルも生成する必要がある。
 
     $ vlib work
     $ vlog -sv -dpiheader dpiheader.h test_accum.v accum.v
     $ vsim -dpiexportobj exportobj test_accum
 
-次に、Haskell のコード、C のコードをコンパイルする。
+C のコードは ghc が生成するヘッダファイルも #include するので、次に、Haskell のコードからコンパイルする。それから C のコードをコンパイルするが、これも ghc でコンパイルする。gcc でなく ghc を使うのは、ghc が FFI 関連ヘッダファイルやライブラリの在処を知ってて、指定してやる必要がなくなるから。
 
-C のコードは ghc が生成するヘッダファイルも #include するので、まず、Haskell のコードから先にコンパイルする。そして C のコードも ghc でコンパイルする。ここではまったのは、ghc は Haskell Platform の Windows 用インストーラのため、渡すパスは Windows パスでないといけないこと。cygpath コマンドの -m オプションなどを使うとよい。
+ここではまったのは、ghc は Haskell Platform の Windows 用インストーラで入れたもののため、Cygwin 形式のパスを解釈できないということ。cygpath コマンドの -m オプションなどで変換するとよい。
 
     $ ghc -c hsMain.hs
     $ ghc -c -I"${MODELSIM_HOME}/include" c_main.c
@@ -300,7 +300,7 @@ C のコードは ghc が生成するヘッダファイルも #include するの
 
     $ ghc -shared -L$"${MODELSIM_HOME}/win32aloem" -o main.dll exportobj.obj c_main.o hsMain.o -lmtipli -package QuickCheck
 
-DPI-C のために `-lmtipli` オプション、QuickCheck ライブラリのために `-package QuickCheck` をつける。
+DPI-C のために `-lmtipli` オプションをつける。また、QuickCheck は、Haskell Platform を入れれば同時にインストールされるが、外部ライブラリ扱いなので `-package QuickCheck` をつける。
 
 DLL が無事できたら、以下のように実行できる。
 
@@ -332,6 +332,10 @@ DLL が無事できたら、以下のように実行できる。
 
 ##補足
 
-- そもそも、ランダムテストのための制約付き乱数生成は、SystemVerilog の目玉機能だったりするので、Verilog でランダムテストをしたいなら、そっちを使うのが普通だと思う。
-- SystemC の DUT を想定したら、も少し有意義な記事になったかもしんない
-- プロは、こんなアホなことは、しない、きっと
+* そもそも、ランダムテストのための制約付き乱数生成は、SystemVerilog の目玉機能だったりするので、Verilog でランダムテストをしたいなら、そっちを使うのが普通だと思う
+* 田中Hさんの元ネタでは、cabal コマンドを使用して、いろいろ素敵に自動化されているが、テスト対象が Verilog になると、どうしても Verilog シミュレータから Haskell を呼び出す形にせざるを得ないため、同じようには出来なかった
+    * なにかうまいテがあったら教えてくだしあ
+* SystemC の DUT を想定したら、も少し有意義な記事になったかもしんない
+    * しかし、これも main は SystemC 側につかまれてる……
+
+プロは、こんなアホなことは、しない、きっと。
