@@ -8,11 +8,11 @@ import Data.Int (Int8, Int16)
 import Data.List (inits)
 
 prop_Accum :: [Int8] -> Property
-prop_Accum is = morallyDubiousIOProperty $ do
+prop_Accum integers = morallyDubiousIOProperty $ do
   reset
-  as <- mapM write_data is
-  return $ as == es
-  where es = map sum $ tail $ map (map fromIntegral) $ inits is
+  actuals <- mapM write_data integers
+  return $ actuals == expects
+  where expects = map sum $ tail $ map (map fromIntegral) $ inits integers
 
 hsMain :: IO ()
 hsMain = quickCheck prop_Accum
