@@ -277,7 +277,7 @@ foreign import ccall reset :: IO ()
 foreign import ccall write_data :: Int8 -> IO Int16
 ```
 
-QuickCheck によって生成された乱数リスト `is` (integers のつもり) に対し、`mapM write_data` することで、乱数をアキュムレータにひとつずつ入力して、それにより変化した出力をリストにして `as` (actuals のつもり) に束縛、これを `es` (expects のつもり) と比較している。
+QuickCheck によって生成された乱数リスト `integers` に対し、`mapM write_data` することで、乱数をアキュムレータにひとつずつ入力して、それにより変化した出力をリストにして `actuals` に束縛、これを `expects` と比較している。
 
 `hsMain` は、プロパティ `prop_Accum` に対して、`quickCheck` を適用しているだけ。
 
