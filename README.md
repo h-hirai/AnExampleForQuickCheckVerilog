@@ -215,7 +215,7 @@ endmodule
 ```
 
 * テストシナリオは、DPI-C で import する `c_main` 関数に丸投げ
-* テストシナリオから、DUT を動かすための task、`reset` と `v_write_data` を DPI-C で export
+* テストシナリオから、DUT を動かすためのタスク、`reset` と `v_write_data` を DPI-C で export
 * `v_write_data` は、引数に渡されたデータをアキュムレータに入力した後、出力を返す
 
 せっかく SystemVerilog なんだから、program ブロックとか clocking とか使ったらいいんじゃないかという気がするけど、そのへん不勉強でよく知らない。
@@ -263,11 +263,11 @@ import Data.Int (Int8, Int16)
 import Data.List (inits)
 
 prop_Accum :: [Int8] -> Property
-prop_Accum is = morallyDubiousIOProperty $ do
+prop_Accum integers = morallyDubiousIOProperty $ do
   reset
-  as <- mapM write_data is
-  return $ as == es
-  where es = map sum $ tail $ map (map fromIntegral) $ inits is
+  actuals <- mapM write_data integers
+  return $ actuals == expects
+  where expects = map sum $ tail $ map (map fromIntegral) $ inits integers
 
 hsMain :: IO ()
 hsMain = quickCheck prop_Accum
@@ -283,7 +283,7 @@ QuickCheck によって生成された乱数リスト `integers` に対し、`ma
 
 コンパイル手順は以下のとおり。
 
-CD-ROM をうぃんうぃんゆわせたときと同様、まず、Verilog のコードからコンパイルする。DPI-C で import するだけの場合とは異なり、`vsim -dpiexportobj` でオブジェクトファイルも生成する必要がある。
+CD-ROM ドライブをうぃんうぃんゆわせたときと同様、まず、Verilog のコードからコンパイルする。DPI-C で import するだけの場合とは異なり、`vsim -dpiexportobj` でオブジェクトファイルも生成する必要がある。
 
     $ vlib work
     $ vlog -sv -dpiheader dpiheader.h test_accum.v accum.v
@@ -300,7 +300,7 @@ C のコードは ghc が生成するヘッダファイルも #include するの
 
     $ ghc -shared -L$"${MODELSIM_HOME}/win32aloem" -o main.dll exportobj.obj c_main.o hsMain.o -lmtipli -package QuickCheck
 
-DPI-C のために `-lmtipli` オプションをつける。また、QuickCheck は、Haskell Platform を入れれば同時にインストールされるが、外部ライブラリ扱いなので `-package QuickCheck` をつける。
+DPI-C のために `-lmtipli` オプションをつける。また、QuickCheck は、Haskell Platform を入れれば同時にインストールされるものの外部ライブラリ扱いなので `-package QuickCheck` をつける。
 
 DLL が無事できたら、以下のように実行できる。
 
